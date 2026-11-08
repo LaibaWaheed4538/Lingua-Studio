@@ -1,5 +1,6 @@
 
 import os
+import re
 import requests
 
 from flask import Flask, request, jsonify, render_template
@@ -28,16 +29,31 @@ API_URL = (
     f"{ACCOUNT_ID}/ai/run/{MODEL}"
 )
 
-REQUEST_TIMEOUT = 60
+REQUEST_TIMEOUT = 30
 MAX_TEXT_LENGTH = 1500
+MAX_SENTENCES = 25
 
 
 # =====================================================
-# PROVISIONALLY APPROVED LANGUAGES
+# VERIFIED LANGUAGES (30)
 # =====================================================
+# Only languages that passed the round-trip test
+# (English -> language -> English) in
+# language_test_results.csv are listed here.
+#
+# Removed on purpose because the model produced wrong
+# meaning, repeated words or random text for them:
+# Catalan, Galician, Armenian, Thai, Burmese, Georgian,
+# Lingala, Tswana, Yoruba, Fulah, Irish, Kazakh, Uzbek,
+# Javanese, Sundanese, Zulu, Xhosa, Somali, Igbo, Hausa,
+# Tamil, Malayalam, Kannada, Marathi, Sinhala, Nepali,
+# Japanese (greeting came out as "good evening"), etc.
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
+    "ur": "Urdu",
+    "hi": "Hindi",
+    "ar": "Arabic",
     "fr": "French",
     "de": "German",
     "es": "Spanish",
@@ -45,21 +61,122 @@ SUPPORTED_LANGUAGES = {
     "pt": "Portuguese",
     "ru": "Russian",
     "zh": "Chinese",
-    "ar": "Arabic",
-    "id": "Indonesian"
+    "tr": "Turkish",
+    "bn": "Bengali",
+    "nl": "Dutch",
+    "pl": "Polish",
+    "sv": "Swedish",
+    "da": "Danish",
+    "no": "Norwegian",
+    "fi": "Finnish",
+    "el": "Greek",
+    "he": "Hebrew",
+    "hu": "Hungarian",
+    "cs": "Czech",
+    "ro": "Romanian",
+    "id": "Indonesian",
+    "ms": "Malay",
+    "vi": "Vietnamese",
+    "uk": "Ukrainian",
+    "ko": "Korean",
+    "hr": "Croatian"
 }
+
+# Languages written without spaces between sentences
+NO_SPACE_LANGUAGES = {"zh"}
+
+# Minimum chunk size (in characters) before a sentence is
+# translated on its own. Chinese characters carry much more
+# meaning each, so the limit is smaller.
+MIN_CHUNK_LENGTH = 15
+MIN_CHUNK_LENGTH_CJK = 5
+
+
+# =====================================================
+# TEXT PREPARATION
+# =====================================================
+# The model is much more accurate on one sentence at a
+# time than on a long block, so long text is split into
+# sentences, translated separately and joined again.
+
+SENTENCE_SPLIT_RE = re.compile(
+    r"(?<=[.!?\u061F\u06D4\u0964])\s+|(?<=[\u3002\uFF01\uFF1F])\s*"
+)
+
+def split_into_chunks(line, language="en"):
+
+    joiner = "" if language in NO_SPACE_LANGUAGES else " "
+
+    minimum = (
+        MIN_CHUNK_LENGTH_CJK
+        if language in NO_SPACE_LANGUAGES
+        else MIN_CHUNK_LENGTH
+    )
+
+    parts = [
+        part.strip()
+        for part in SENTENCE_SPLIT_RE.split(line)
+        if part and part.strip()
+    ]
+
+    # Very short pieces (like "Mr." or "Hi.") confuse the
+    # model, so they are joined with the next sentence.
+
+    chunks = []
+    buffer = ""
+
+    for part in parts:
+
+        buffer = f"{buffer}{joiner}{part}" if buffer else part
+
+        if len(buffer) >= minimum:
+            chunks.append(buffer)
+            buffer = ""
+
+    if buffer:
+        if chunks:
+            chunks[-1] = f"{chunks[-1]}{joiner}{buffer}"
+        else:
+            chunks.append(buffer)
+
+    return chunks
+
+
+def looks_broken(output):
+
+    # Detects the typical model failure where it repeats
+    # one word again and again (for example "Hello Hello
+    # Hello Hello").
+
+    words = output.split()
+
+    if len(words) < 5:
+        return False
+
+    longest_run = 1
+    current_run = 1
+
+    for previous, current in zip(words, words[1:]):
+
+        if previous.lower() == current.lower():
+            current_run += 1
+            longest_run = max(longest_run, current_run)
+        else:
+            current_run = 1
+
+    if longest_run >= 4:
+        return True
+
+    unique_ratio = len({w.lower() for w in words}) / len(words)
+
+    return unique_ratio < 0.4
 
 
 # =====================================================
 # CLOUDFLARE TRANSLATION
 # =====================================================
 
-def translate_text(text, source_language, target_language):
-
-    if not ACCOUNT_ID or not API_TOKEN:
-        raise RuntimeError(
-            "Cloudflare credentials are not configured."
-        )
+def call_cloudflare(text, source_language, target_language):
 
     payload = {
         "text": text,
@@ -126,9 +243,68 @@ def translate_text(text, source_language, target_language):
 
     usage = data.get("usage", {})
 
+    return translated_text.strip(), usage.get("neurons")
+
+
+def translate_text(text, source_language, target_language):
+
+    if not ACCOUNT_ID or not API_TOKEN:
+        raise RuntimeError(
+            "Cloudflare credentials are not configured."
+        )
+
+    lines = text.splitlines()
+
+    jobs = []
+
+    for line in lines:
+        line = line.strip()
+        jobs.append(
+            split_into_chunks(line, source_language) if line else []
+        )
+
+    total_chunks = sum(len(chunks) for chunks in jobs)
+
+    if total_chunks > MAX_SENTENCES:
+        raise RuntimeError(
+            f"Text is too long ({total_chunks} sentences). "
+            f"Please translate at most {MAX_SENTENCES} sentences at a time."
+        )
+
+    separator = "" if target_language in NO_SPACE_LANGUAGES else " "
+
+    translated_lines = []
+    total_neurons = 0.0
+
+    for chunks in jobs:
+
+        translated_chunks = []
+
+        for chunk in chunks:
+
+            translated, neurons = call_cloudflare(
+                chunk,
+                source_language,
+                target_language
+            )
+
+            if looks_broken(translated):
+                raise RuntimeError(
+                    "The translation looked unreliable for this text. "
+                    "Please rewrite it as a complete, clear sentence "
+                    "and try again."
+                )
+
+            translated_chunks.append(translated)
+
+            if isinstance(neurons, (int, float)):
+                total_neurons += neurons
+
+        translated_lines.append(separator.join(translated_chunks))
+
     return {
-        "translated_text": translated_text.strip(),
-        "neurons": usage.get("neurons")
+        "translated_text": "\n".join(translated_lines).strip(),
+        "neurons": round(total_neurons, 4)
     }
 
 
@@ -139,7 +315,12 @@ def translate_text(text, source_language, target_language):
 @app.route("/")
 def home():
 
-    return render_template("index.html")
+    languages = [
+        {"code": code, "name": name}
+        for code, name in SUPPORTED_LANGUAGES.items()
+    ]
+
+    return render_template("index.html", languages=languages)
 
 
 # =====================================================
@@ -172,6 +353,7 @@ def health():
         "status": "success",
         "service": "Lingua Studio",
         "translation_engine": MODEL,
+        "languages": len(SUPPORTED_LANGUAGES),
         "credentials_configured": bool(
             ACCOUNT_ID and API_TOKEN
         ),
