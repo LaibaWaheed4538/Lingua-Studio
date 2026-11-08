@@ -541,17 +541,16 @@ button, select, textarea {
     font-weight: 800;
     cursor: pointer;
     transition: var(--transition);
-    box-shadow: 0 8px 25px rgba(216,182,106,.17);
 }
 
 .translate-button:hover {
-    background-position: right center;
+    background-position: 100% 0;
     transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(216,182,106,.30);
+    box-shadow: 0 10px 30px rgba(216,182,106,.2);
 }
 
 .translate-button:active {
-    transform: scale(.98);
+    transform: translateY(0);
 }
 
 .translate-button:disabled {
@@ -561,15 +560,18 @@ button, select, textarea {
 }
 
 .button-arrow {
-    margin-left: 10px;
+    margin-left: 12px;
 }
 
 .error-message {
-    color: #FF8585;
-    text-align: center;
+    display: none;
+    margin-top: 18px;
+    padding: 12px 15px;
+    color: #FFB7B7;
+    background: rgba(255,70,70,.08);
+    border: 1px solid rgba(255,70,70,.2);
+    border-radius: 9px;
     font-size: 12px;
-    margin-top: 12px;
-    min-height: 0;
 }
 
 /* INFO ROW */
@@ -966,26 +968,25 @@ button, select, textarea {
     }
 }
 
-/* =====================================
-   SAVED TRANSLATIONS SECTION
-===================================== */
+/* =================================
+   SAVED TRANSLATIONS
+================================= */
 
 .saved-section {
     margin-top: 30px;
     padding: 28px;
-    background: linear-gradient(145deg, #0D0B2A, #08071F);
-    border: 1px solid rgba(216, 182, 106, 0.22);
+    background: linear-gradient(145deg, #11102D, #08071F);
+    border: 1px solid rgba(216,182,106,.20);
     border-radius: 18px;
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
-    animation: fadeUp 0.7s ease both;
+    box-shadow: 0 15px 45px rgba(0,0,0,.18);
+    animation: fadeUp .7s ease both;
 }
 
 .saved-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 15px;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 }
 
 .saved-header h2 {
@@ -1001,39 +1002,21 @@ button, select, textarea {
 }
 
 .saved-icon {
-    width: 45px;
-    height: 45px;
-    display: grid;
-    place-items: center;
-    border-radius: 13px;
-    background: rgba(216, 182, 106, 0.12);
-    border: 1px solid rgba(216, 182, 106, 0.3);
+    font-size: 32px;
     color: #D8B66A;
-    font-size: 23px;
-    transition: all 0.3s ease;
 }
-
-.saved-icon:hover {
-    background: #D8B66A;
-    color: #02011A;
-    transform: rotate(12deg);
-}
-
-/* SAVED LIST */
 
 .saved-list {
     display: flex;
     flex-direction: column;
-    gap: 13px;
+    gap: 12px;
 }
 
-/* EMPTY STATE */
-
 .saved-empty {
-    padding: 35px 15px;
+    padding: 32px 15px;
     text-align: center;
-    background: rgba(17, 16, 45, 0.65);
-    border: 1px dashed rgba(216, 182, 106, 0.25);
+    background: rgba(2,1,26,.45);
+    border: 1px dashed rgba(216,182,106,.25);
     border-radius: 12px;
 }
 
@@ -1041,7 +1024,7 @@ button, select, textarea {
     display: block;
     font-size: 32px;
     color: #D8B66A;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .saved-empty p {
@@ -1060,106 +1043,123 @@ button, select, textarea {
 /* SAVED ITEM */
 
 .saved-item {
-    padding: 18px;
-    background: #11102D;
-    border: 1px solid rgba(216, 182, 106, 0.15);
-    border-radius: 13px;
-    transition: all 0.3s ease;
+    padding: 17px;
+    background: #0B0A27;
+    border: 1px solid rgba(216,182,106,.15);
+    border-radius: 12px;
+    transition: .3s ease;
 }
 
 .saved-item:hover {
+    border-color: #D8B66A;
     background: #17143A;
-    border-color: rgba(216, 182, 106, 0.5);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
 }
 
-.saved-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 15px;
-}
-
-.saved-language {
+.saved-item h4 {
     color: #D8B66A;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
-
-.saved-date {
-    color: #89859F;
-    font-size: 10px;
-}
-
-.saved-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-}
-
-.saved-original,
-.saved-translated {
-    padding: 14px;
-    background: rgba(2, 1, 26, 0.6);
-    border-radius: 9px;
-    color: #FFFFFF;
     font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.saved-item p {
+    color: #FFFFFF;
+    font-size: 13px;
     line-height: 1.8;
     overflow-wrap: anywhere;
 }
 
-.saved-label {
+.saved-item small {
     display: block;
-    color: #D8B66A;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
+    color: #89859F;
+    font-size: 10px;
+    margin-top: 8px;
 }
 
-/* SAVED ACTION BUTTONS */
-
-.saved-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 18px;
-    margin-top: 15px;
-}
-
-.saved-copy,
-.remove-saved {
+.saved-item button {
+    margin-top: 12px;
+    margin-right: 12px;
     background: transparent;
     border: none;
+    color: #D8B66A;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.25s ease;
 }
 
-.saved-copy {
-    color: #D8B66A;
-}
-
-.remove-saved {
-    color: #E58B91;
-}
-
-.saved-copy:hover {
+.saved-item button:hover {
     color: #F0D99A;
 }
 
-.remove-saved:hover {
-    color: #FFB2B7;
-    transform: translateY(-2px);
+/* HISTORY SEARCH */
+
+.history-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    margin-bottom: 17px;
+    background: #08071F;
+    border: 1px solid rgba(216,182,106,.17);
+    border-radius: 10px;
 }
 
-/* MOBILE */
+.history-search span {
+    color: #D8B66A;
+    font-size: 20px;
+}
+
+.history-search input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.history-search input::placeholder {
+    color: #77728E;
+}
+
+/* LANGUAGE DIRECTION */
+
+#inputText[dir="rtl"],
+#translatedText[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+}
+
+#inputText[dir="ltr"],
+#translatedText[dir="ltr"] {
+    direction: ltr;
+    text-align: left;
+}
+
+/* SCROLLBAR */
+
+::-webkit-scrollbar {
+    width: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: #050419;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #625437;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #D8B66A;
+}
+
+/* FINAL RESPONSIVE ADJUSTMENTS */
 
 @media (max-width: 760px) {
-
     .saved-section {
         padding: 18px;
     }
@@ -1168,103 +1168,27 @@ button, select, textarea {
         font-size: 18px;
     }
 
-    .saved-content {
-        grid-template-columns: 1fr;
+    .saved-icon {
+        font-size: 25px;
     }
-
 }
 
-@media (max-width: 420px) {
-
+@media (max-width: 480px) {
     .saved-header {
-        align-items: flex-start;
+        gap: 10px;
     }
 
-    .saved-date {
-        font-size: 9px;
+    .editor-footer {
+        flex-wrap: wrap;
     }
 
-    .saved-item {
-        padding: 13px;
-    }
-
-}
-/* Save and Copy Button Spacing */
-
-.output-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 22px;
-    flex-wrap: wrap;
-}
-
-.output-actions button {
-    padding: 7px 10px;
-}
-
-@media (max-width: 480px) {
     .output-actions {
-        gap: 12px;
-    }
-}
-
-/* =================================
-   HISTORY SEARCH BAR
-================================= */
-
-.history-search {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    width: 100%;
-    min-height: 52px;
-    padding: 0 17px;
-    margin-bottom: 22px;
-    background: #0B0A27;
-    border: 1px solid rgba(216, 182, 106, 0.20);
-    border-radius: 11px;
-    transition: all 0.3s ease;
-}
-
-.history-search:focus-within {
-    border-color: #D8B66A;
-    box-shadow: 0 0 20px rgba(216, 182, 106, 0.10);
-}
-
-.history-search span {
-    color: #D8B66A;
-    font-size: 25px;
-    line-height: 1;
-}
-
-.history-search input {
-    flex: 1;
-    min-width: 0;
-    height: 48px;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: #FFFFFF;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-}
-
-.history-search input::placeholder {
-    color: #89859F;
-}
-
-.history-search input:focus {
-    outline: none;
-}
-
-@media (max-width: 480px) {
-    .history-search {
-        min-height: 46px;
-        padding: 0 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
     }
 
-    .history-search input {
-        font-size: 11px;
+    .history-item-top {
+        flex-wrap: wrap;
     }
 }

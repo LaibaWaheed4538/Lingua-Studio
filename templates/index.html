@@ -145,9 +145,11 @@
                 </div>
 
 
-                <button type="button" id="swapLanguages"
-                        class="swap-button"
-                        aria-label="Swap languages">
+                <button
+                    type="button"
+                    id="swapLanguages"
+                    class="swap-button"
+                    aria-label="Swap languages">
                     ⇄
                 </button>
 
@@ -201,7 +203,10 @@
                     <div class="editor-footer">
                         <span id="characterCount">0 / 500</span>
 
-                        <button type="button" id="clearText" class="utility-button">
+                        <button
+                            type="button"
+                            id="clearText"
+                            class="utility-button">
                             Clear text
                         </button>
                     </div>
@@ -234,15 +239,23 @@
                     <div class="editor-footer">
                         <span id="translationStatus">Waiting for text</span>
 
-<div class="output-actions">
-    <button type="button" id="saveTranslation" class="utility-button">
-        ☆ Save Favorite
-    </button>
+                        <div class="output-actions">
 
-    <button type="button" id="copyTranslation" class="utility-button">
-        Copy result
-    </button>
-</div>
+                            <button
+                                type="button"
+                                id="saveTranslation"
+                                class="utility-button">
+                                ☆ Save Favorite
+                            </button>
+
+                            <button
+                                type="button"
+                                id="copyTranslation"
+                                class="utility-button">
+                                Copy result
+                            </button>
+
+                        </div>
 
                     </div>
 
@@ -275,69 +288,80 @@
             <p id="errorMessage" class="error-message" role="alert"></p>
 
         </section>
-        
-<!-- TRANSLATION HISTORY -->
-<section class="history-section" id="recent">
-
-    <div class="history-header">
-        <div>
-            <span class="section-kicker">YOUR ACTIVITY</span>
-            <h2>Recent translations</h2>
-            <p>Your previous translations in one place.</p>
-        </div>
-
-        <button type="button" id="clearHistory" class="history-clear">
-            Clear history
-        </button>
-    </div>
-    
-<div class="history-search">
-    <span>⌕</span>
-    <input
-        type="text"
-        id="historySearch"
-        placeholder="Search previous translations..."
-    >
-</div>
 
 
-    <div id="historyList" class="history-list">
+        <!-- TRANSLATION HISTORY -->
+        <section class="history-section" id="recent">
 
-        <div class="history-empty">
-            <span>◷</span>
-            <p>No translation history yet.</p>
-            <small>Your translations will appear here.</small>
-        </div>
+            <div class="history-header">
 
-    </div>
+                <div>
+                    <span class="section-kicker">YOUR ACTIVITY</span>
+                    <h2>Recent translations</h2>
+                    <p>Your previous translations in one place.</p>
+                </div>
 
-</section>
+                <button
+                    type="button"
+                    id="clearHistory"
+                    class="history-clear">
+                    Clear history
+                </button>
 
-<!-- SAVED TRANSLATIONS -->
-<section class="saved-section" id="saved">
+            </div>
 
-    <div class="saved-header">
-        <div>
-            <span class="section-kicker">YOUR COLLECTION</span>
-            <h2>Saved translations</h2>
-            <p>Your favorite translations, always within reach.</p>
-        </div>
 
-        <span class="saved-icon">★</span>
-    </div>
+            <div class="history-search">
+                <span>⌕</span>
 
-    <div id="savedList" class="saved-list">
+                <input
+                    type="text"
+                    id="historySearch"
+                    placeholder="Search previous translations..."
+                >
+            </div>
 
-        <div class="saved-empty">
-            <span>☆</span>
-            <p>No saved translations yet.</p>
-            <small>Save your favorite translations to find them here.</small>
-        </div>
 
-    </div>
+            <div id="historyList" class="history-list">
 
-</section>
+                <div class="history-empty">
+                    <span>◷</span>
+                    <p>No translation history yet.</p>
+                    <small>Your translations will appear here.</small>
+                </div>
 
+            </div>
+
+        </section>
+
+
+        <!-- SAVED TRANSLATIONS -->
+        <section class="saved-section" id="saved">
+
+            <div class="saved-header">
+
+                <div>
+                    <span class="section-kicker">YOUR COLLECTION</span>
+                    <h2>Saved translations</h2>
+                    <p>Your favorite translations, always within reach.</p>
+                </div>
+
+                <span class="saved-icon">★</span>
+
+            </div>
+
+
+            <div id="savedList" class="saved-list">
+
+                <div class="saved-empty">
+                    <span>☆</span>
+                    <p>No saved translations yet.</p>
+                    <small>Save your favorite translations to find them here.</small>
+                </div>
+
+            </div>
+
+        </section>
 
 
         <!-- BOTTOM INFORMATION -->
@@ -345,22 +369,27 @@
 
             <div class="info-item">
                 <span class="info-icon">✧</span>
+
                 <div>
                     <strong>Simple translation</strong>
                     <small>Easy language conversion</small>
                 </div>
             </div>
 
+
             <div class="info-item">
                 <span class="info-icon">◎</span>
+
                 <div>
                     <strong>Multiple languages</strong>
                     <small>Choose supported languages</small>
                 </div>
             </div>
 
+
             <div class="info-item">
                 <span class="info-icon">◇</span>
+
                 <div>
                     <strong>Instant results</strong>
                     <small>Powered by translation API</small>
@@ -372,8 +401,11 @@
 
         <!-- FOOTER -->
         <footer class="footer">
+
             <span>LINGUA STUDIO © 2026</span>
+
             <span>Made for better communication.</span>
+
         </footer>
 
     </main>

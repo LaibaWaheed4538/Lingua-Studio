@@ -1,8 +1,10 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    "use strict";
+
     // =====================================
-    // HTML ELEMENTS
+    // ELEMENTS
     // =====================================
 
     const inputText = document.getElementById("inputText");
@@ -28,148 +30,136 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const savedList = document.getElementById("savedList");
 
-    // Check required elements
     const requiredElements = [
-        inputText, translatedText, sourceLanguage,
-        targetLanguage, translateButton, swapButton,
+        inputText, translatedText,
+        sourceLanguage, targetLanguage,
+        translateButton, swapButton,
         clearButton, copyButton, saveButton,
-        characterCount, translationStatus, errorMessage,
-        historyList, historySearch, clearHistoryButton, savedList
+        characterCount, translationStatus,
+        errorMessage, historyList, historySearch,
+        clearHistoryButton, savedList
     ];
 
     if (requiredElements.some(element => !element)) {
-        console.error("Some HTML elements are missing. Check index.html.");
+        console.error("Lingua Studio: HTML elements are missing.");
         return;
     }
+
+    // =====================================
+    // CONFIGURATION
+    // =====================================
+
+    const HISTORY_KEY = "lingua_translation_history";
+    const SAVED_KEY = "lingua_saved_translations";
+    const MAX_HISTORY = 50;
+    const MAX_CHARACTERS = 500;
+
+    const rtlLanguages = ["ur", "ar", "he", "fa", "ps"];
+
+    let currentHistory = [];
+    let savedTranslations = [];
+    let isTranslating = false;
 
     // =====================================
     // STORAGE
     // =====================================
 
-    const HISTORY_KEY = "lingua_translation_history";
-    const SAVED_KEY = "lingua_saved_translations";
+    function readStorage(key) {
+        try {
+            const data = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(data) ? data : [];
+        } catch (error) {
+            console.error("Storage error:", error);
+            return [];
+        }
+    }
 
-    const rtlLanguages = ["ur", "ar", "he", "fa"];
-
-    let currentHistory = [];
-    let savedTranslations = [];
+    function writeStorage(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+        } catch (error) {
+            console.error("Unable to save:", error);
+            showError("Unable to save data in browser storage.");
+            return false;
+        }
+    }
 
     // =====================================
-    // LANGUAGE NAME
+    // MESSAGES
+    // =====================================
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+    }
+
+    function clearError() {
+        errorMessage.textContent = "";
+        errorMessage.style.display = "none";
+    }
+
+    // =====================================
+    // LANGUAGE HELPERS
     // =====================================
 
     function getLanguageName(code) {
+        const selects = [sourceLanguage, targetLanguage];
 
-        for (const select of [sourceLanguage, targetLanguage]) {
-
+        for (const select of selects) {
             const option = Array.from(select.options).find(
                 item => item.value === code
             );
 
-            if (option) {
-                return option.textContent.trim();
-            }
+            if (option) return option.textContent.trim();
         }
 
         return code;
     }
 
-    // =====================================
-    // LOAD HISTORY
-    // =====================================
+    function updateTextDirection() {
+        inputText.dir = rtlLanguages.includes(sourceLanguage.value)
+            ? "rtl" : "ltr";
 
-    function loadHistory() {
+        translatedText.dir = rtlLanguages.includes(targetLanguage.value)
+            ? "rtl" : "ltr";
+    }
 
-        try {
-
-            currentHistory =
-                JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-
-            if (!Array.isArray(currentHistory)) {
-                currentHistory = [];
-            }
-
-        } catch (error) {
-
-            currentHistory = [];
-        }
-
-        renderHistory();
+    function updateCharacterCount() {
+        characterCount.textContent =
+            `${inputText.value.length} / ${MAX_CHARACTERS}`;
     }
 
     // =====================================
-    // SAVE HISTORY
+    // EMPTY STATES
     // =====================================
 
-    function saveHistory() {
+    function createEmptyState(container, icon, message, description) {
+        const empty = document.createElement("div");
+        empty.className = container === savedList
+            ? "saved-empty"
+            : "history-empty";
 
-        try {
+        const symbol = document.createElement("span");
+        symbol.textContent = icon;
 
-            localStorage.setItem(
-                HISTORY_KEY,
-                JSON.stringify(currentHistory)
-            );
+        const title = document.createElement("p");
+        title.textContent = message;
 
-        } catch (error) {
+        const detail = document.createElement("small");
+        detail.textContent = description;
 
-            errorMessage.textContent = "Unable to save history.";
-        }
+        empty.append(symbol, title, detail);
+        container.appendChild(empty);
     }
 
     // =====================================
-    // LOAD FAVORITES
+    // SAFE TEXT PANEL
     // =====================================
 
-    function loadSaved() {
-
-        try {
-
-            savedTranslations =
-                JSON.parse(localStorage.getItem(SAVED_KEY)) || [];
-
-            if (!Array.isArray(savedTranslations)) {
-                savedTranslations = [];
-            }
-
-        } catch (error) {
-
-            savedTranslations = [];
-        }
-
-        renderSaved();
-    }
-
-    // =====================================
-    // SAVE FAVORITES
-    // =====================================
-
-    function saveFavorites() {
-
-        try {
-
-            localStorage.setItem(
-                SAVED_KEY,
-                JSON.stringify(savedTranslations)
-            );
-
-        } catch (error) {
-
-            errorMessage.textContent =
-                "Unable to save favorite translations.";
-        }
-    }
-
-    // =====================================
-    // CREATE TEXT PANEL
-    // =====================================
-
-    function createTextPanel(label, value, className = "") {
-
+    function createTextPanel(label, value, className) {
         const panel = document.createElement("div");
-
-        if (className) {
-            panel.className = className;
-        }
+        panel.className = className;
 
         const heading = document.createElement("span");
         heading.className = "history-label";
@@ -179,69 +169,119 @@ document.addEventListener("DOMContentLoaded", () => {
         text.textContent = value;
 
         panel.append(heading, text);
-
         return panel;
     }
 
     // =====================================
-    // RENDER HISTORY WITH SEARCH
+    // COPY FUNCTION
     // =====================================
 
-    function renderHistory() {
-
-        historyList.innerHTML = "";
-
-        const searchTerm = historySearch.value
-            .trim()
-            .toLocaleLowerCase();
-
-        // Filter history
-        const filteredHistory = currentHistory.filter(item => {
-
-            const searchableText = [
-                item.original,
-                item.translation,
-                item.sourceName,
-                item.targetName,
-                item.source,
-                item.target
-            ].join(" ").toLocaleLowerCase();
-
-            return searchableText.includes(searchTerm);
-        });
-
-        // Empty state
-        if (filteredHistory.length === 0) {
-
-            const empty = document.createElement("div");
-            empty.className = "history-empty";
-
-            const icon = document.createElement("span");
-            icon.textContent = "◷";
-
-            const message = document.createElement("p");
-
-            message.textContent = searchTerm
-                ? "No matching translations found."
-                : "No translation history yet.";
-
-            const description = document.createElement("small");
-
-            description.textContent = searchTerm
-                ? "Try another search."
-                : "Your translations will appear here.";
-
-            empty.append(icon, message, description);
-
-            historyList.appendChild(empty);
-
+    async function copyText(text, button) {
+        if (!text) {
+            showError("There is no text to copy.");
             return;
         }
 
-        // Display filtered history
-        filteredHistory.forEach(item => {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const temporary = document.createElement("textarea");
+                temporary.value = text;
+                temporary.style.position = "fixed";
+                temporary.style.opacity = "0";
+                document.body.appendChild(temporary);
+                temporary.select();
 
-            const card = document.createElement("div");
+                const success = document.execCommand("copy");
+                temporary.remove();
+
+                if (!success) throw new Error("Copy failed");
+            }
+
+            clearError();
+
+            if (button) {
+                const previous = button.textContent;
+                button.textContent = "Copied!";
+
+                setTimeout(() => {
+                    button.textContent = previous;
+                }, 1500);
+            }
+
+        } catch (error) {
+            showError("Unable to copy. Please copy manually.");
+        }
+    }
+
+    // =====================================
+    // HISTORY
+    // =====================================
+
+    function loadHistory() {
+        currentHistory = readStorage(HISTORY_KEY);
+        renderHistory();
+    }
+
+    function saveHistory() {
+        return writeStorage(HISTORY_KEY, currentHistory);
+    }
+
+    function addToHistory(original, translation, source, target) {
+        const item = {
+            id: createID(),
+            original,
+            translation,
+            source,
+            target,
+            sourceName: getLanguageName(source),
+            targetName: getLanguageName(target),
+            date: new Date().toISOString()
+        };
+
+        currentHistory.unshift(item);
+        currentHistory = currentHistory.slice(0, MAX_HISTORY);
+
+        if (saveHistory()) renderHistory();
+    }
+
+    function createID() {
+        return window.crypto &&
+            typeof window.crypto.randomUUID === "function"
+            ? window.crypto.randomUUID()
+            : Date.now().toString(36) +
+              Math.random().toString(36).slice(2);
+    }
+
+    function renderHistory() {
+        historyList.innerHTML = "";
+
+        const term = historySearch.value.trim().toLowerCase();
+
+        const filtered = currentHistory.filter(item => {
+            const searchable = [
+                item.original,
+                item.translation,
+                item.sourceName,
+                item.targetName
+            ].join(" ").toLowerCase();
+
+            return searchable.includes(term);
+        });
+
+        if (filtered.length === 0) {
+            createEmptyState(
+                historyList,
+                "◷",
+                term ? "No matching translations found." : "No translation history yet.",
+                term ? "Try another search." : "Your translations will appear here."
+            );
+            return;
+        }
+
+        filtered.forEach(item => {
+            const card = document.createElement("article");
             card.className = "history-item";
 
             const top = document.createElement("div");
@@ -249,40 +289,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const languages = document.createElement("span");
             languages.className = "history-language";
-
             languages.textContent =
                 `${item.sourceName} → ${item.targetName}`;
 
-            const time = document.createElement("span");
-            time.className = "history-time";
+            const date = document.createElement("span");
+            date.className = "history-time";
+            date.textContent = new Date(item.date).toLocaleString();
 
-            time.textContent = new Date(item.date).toLocaleString();
-
-            top.append(languages, time);
+            top.append(languages, date);
 
             const content = document.createElement("div");
             content.className = "history-content";
 
-            const original = createTextPanel(
-                "ORIGINAL TEXT",
-                item.original,
-                "history-original"
+            content.append(
+                createTextPanel("ORIGINAL TEXT", item.original, "history-original"),
+                createTextPanel("TRANSLATION", item.translation, "history-translated")
             );
-
-            const translated = createTextPanel(
-                "TRANSLATION",
-                item.translation,
-                "history-translated"
-            );
-
-            content.append(original, translated);
 
             const actions = document.createElement("div");
             actions.className = "history-actions";
 
             const copy = document.createElement("button");
-            copy.className = "history-copy";
             copy.type = "button";
+            copy.className = "history-copy";
             copy.textContent = "Copy translation";
 
             copy.addEventListener("click", () => {
@@ -290,95 +319,44 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             actions.appendChild(copy);
-
             card.append(top, content, actions);
-
             historyList.appendChild(card);
         });
     }
 
-    // Search while typing
-    historySearch.addEventListener("input", renderHistory);
-
     // =====================================
-    // ADD TO HISTORY
+    // FAVORITES
     // =====================================
 
-    function addToHistory(original, translation, source, target) {
-
-        currentHistory.unshift({
-
-            original,
-            translation,
-            source,
-            target,
-
-            sourceName: getLanguageName(source),
-            targetName: getLanguageName(target),
-
-            date: new Date().toISOString()
-        });
-
-        // Keep latest 50 translations
-        currentHistory = currentHistory.slice(0, 50);
-
-        saveHistory();
-        renderHistory();
+    function loadSaved() {
+        savedTranslations = readStorage(SAVED_KEY);
+        renderSaved();
     }
 
-    // =====================================
-    // RENDER SAVED FAVORITES
-    // =====================================
+    function saveFavorites() {
+        return writeStorage(SAVED_KEY, savedTranslations);
+    }
 
     function renderSaved() {
-
         savedList.innerHTML = "";
 
         if (savedTranslations.length === 0) {
-
-            const empty = document.createElement("div");
-            empty.className = "saved-empty";
-
-            const icon = document.createElement("span");
-            icon.textContent = "☆";
-
-            const message = document.createElement("p");
-            message.textContent = "No saved translations yet.";
-
-            const description = document.createElement("small");
-            description.textContent =
-                "Save your favorite translations to find them here.";
-
-            empty.append(icon, message, description);
-
-            savedList.appendChild(empty);
-
+            createEmptyState(
+                savedList,
+                "☆",
+                "No saved translations yet.",
+                "Save your favorite translations to find them here."
+            );
             return;
         }
 
         savedTranslations.forEach(item => {
-
-            const card = document.createElement("div");
+            const card = document.createElement("article");
             card.className = "saved-item";
 
-            const header = document.createElement("div");
-            header.className = "saved-item-header";
-
-            const languages = document.createElement("span");
-            languages.className = "saved-language";
-
-            languages.textContent =
+            const heading = document.createElement("h4");
+            heading.textContent =
                 `${item.sourceName} → ${item.targetName}`;
-
-            const date = document.createElement("span");
-            date.className = "saved-date";
-
-            date.textContent = new Date(item.date).toLocaleString();
-
-            header.append(languages, date);
-
-            const content = document.createElement("div");
-            content.className = "saved-content";
 
             const original = createTextPanel(
                 "ORIGINAL TEXT",
@@ -386,23 +364,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 "saved-original"
             );
 
-            const translated = createTextPanel(
+            const translation = createTextPanel(
                 "TRANSLATION",
                 item.translation,
                 "saved-translated"
             );
 
-            // Saved section uses its own label class
-            original.querySelector("span").className = "saved-label";
-            translated.querySelector("span").className = "saved-label";
-
-            content.append(original, translated);
-
-            const actions = document.createElement("div");
-            actions.className = "saved-actions";
+            const date = document.createElement("small");
+            date.textContent = new Date(item.date).toLocaleString();
 
             const copy = document.createElement("button");
-            copy.className = "saved-copy";
             copy.type = "button";
             copy.textContent = "Copy";
 
@@ -411,56 +382,26 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const remove = document.createElement("button");
-            remove.className = "remove-saved";
             remove.type = "button";
             remove.textContent = "★ Remove";
 
             remove.addEventListener("click", () => {
-
                 savedTranslations = savedTranslations.filter(
                     saved => saved.id !== item.id
                 );
 
-                saveFavorites();
-                renderSaved();
-
-                translationStatus.textContent =
-                    "Favorite removed successfully.";
+                if (saveFavorites()) {
+                    renderSaved();
+                    translationStatus.textContent = "Favorite removed.";
+                }
             });
 
-            actions.append(copy, remove);
-
-            card.append(header, content, actions);
+            card.append(
+                heading, original, translation, date, copy, remove
+            );
 
             savedList.appendChild(card);
         });
-    }
-
-    // =====================================
-    // COPY TEXT
-    // =====================================
-
-    async function copyText(text, button) {
-
-        try {
-
-            await navigator.clipboard.writeText(text);
-
-            const previous = button.textContent;
-
-            button.textContent = "Copied!";
-
-            setTimeout(() => {
-                button.textContent = previous;
-            }, 1500);
-
-            errorMessage.textContent = "";
-
-        } catch (error) {
-
-            errorMessage.textContent =
-                "Unable to copy. Please copy manually.";
-        }
     }
 
     // =====================================
@@ -468,58 +409,46 @@ document.addEventListener("DOMContentLoaded", () => {
     // =====================================
 
     saveButton.addEventListener("click", () => {
-
         if (translatedText.dataset.translated !== "true") {
-
-            errorMessage.textContent =
-                "Translate some text before saving it.";
-
+            showError("Translate some text before saving it.");
             return;
         }
 
         const original = inputText.value.trim();
         const translation = translatedText.textContent.trim();
-
         const source = sourceLanguage.value;
         const target = targetLanguage.value;
 
-        const alreadySaved = savedTranslations.some(item =>
-
+        const duplicate = savedTranslations.some(item =>
             item.original === original &&
             item.translation === translation &&
             item.source === source &&
             item.target === target
         );
 
-        if (alreadySaved) {
-
+        if (duplicate) {
             translationStatus.textContent =
                 "This translation is already saved.";
-
             return;
         }
 
         savedTranslations.unshift({
-
-            id: Date.now().toString() +
-                Math.random().toString(36).slice(2),
-
+            id: createID(),
             original,
             translation,
             source,
             target,
-
             sourceName: getLanguageName(source),
             targetName: getLanguageName(target),
-
             date: new Date().toISOString()
         });
 
-        saveFavorites();
-        renderSaved();
-
-        translationStatus.textContent =
-            "★ Favorite saved successfully!";
+        if (saveFavorites()) {
+            renderSaved();
+            translationStatus.textContent =
+                "★ Favorite saved successfully!";
+            clearError();
+        }
     });
 
     // =====================================
@@ -527,42 +456,34 @@ document.addEventListener("DOMContentLoaded", () => {
     // =====================================
 
     inputText.addEventListener("input", () => {
-
-        characterCount.textContent =
-            `${inputText.value.length} / 500`;
-
-        errorMessage.textContent = "";
+        updateCharacterCount();
+        clearError();
     });
 
     // =====================================
-    // SWAP LANGUAGES
+    // LANGUAGE SWAP
     // =====================================
 
     swapButton.addEventListener("click", () => {
-
         const previousSource = sourceLanguage.value;
 
         sourceLanguage.value = targetLanguage.value;
         targetLanguage.value = previousSource;
 
         if (translatedText.dataset.translated === "true") {
+            inputText.value = translatedText.textContent.trim();
 
-            inputText.value = translatedText.textContent;
-
-            characterCount.textContent =
-                `${inputText.value.length} / 500`;
-
-            translatedText.innerHTML =
-                '<span class="placeholder-text">Your translation will appear here...</span>';
+            translatedText.textContent =
+                "Your translation will appear here...";
 
             translatedText.dataset.translated = "false";
         }
 
-        errorMessage.textContent = "";
+        updateCharacterCount();
+        updateTextDirection();
+        clearError();
 
         translationStatus.textContent = "Languages swapped";
-
-        updateTextDirection();
     });
 
     // =====================================
@@ -570,37 +491,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // =====================================
 
     clearButton.addEventListener("click", () => {
-
         inputText.value = "";
 
-        translatedText.innerHTML =
-            '<span class="placeholder-text">Your translation will appear here...</span>';
+        translatedText.textContent =
+            "Your translation will appear here...";
 
         translatedText.dataset.translated = "false";
 
-        characterCount.textContent = "0 / 500";
+        updateCharacterCount();
+        updateTextDirection();
 
         translationStatus.textContent = "Waiting for text";
+        clearError();
 
-        errorMessage.textContent = "";
-
-        updateTextDirection();
+        inputText.focus();
     });
 
-    // =====================================
-    // TEXT DIRECTION
-    // =====================================
-
-    function updateTextDirection() {
-
-        translatedText.setAttribute(
-            "dir",
-            rtlLanguages.includes(targetLanguage.value)
-                ? "rtl"
-                : "ltr"
-        );
-    }
-
+    sourceLanguage.addEventListener("change", updateTextDirection);
     targetLanguage.addEventListener("change", updateTextDirection);
 
     // =====================================
@@ -608,53 +515,50 @@ document.addEventListener("DOMContentLoaded", () => {
     // =====================================
 
     translateButton.addEventListener("click", async () => {
+        if (isTranslating) return;
 
         const text = inputText.value.trim();
-
         const source = sourceLanguage.value;
         const target = targetLanguage.value;
 
-        errorMessage.textContent = "";
+        clearError();
 
         if (!text) {
-
-            errorMessage.textContent =
-                "Please enter some text to translate.";
-
+            showError("Please enter some text to translate.");
             inputText.focus();
+            return;
+        }
 
+        if (text.length > MAX_CHARACTERS) {
+            showError(`Maximum ${MAX_CHARACTERS} characters allowed.`);
+            return;
+        }
+
+        if (!source || !target) {
+            showError("Please select both languages.");
             return;
         }
 
         if (source === target) {
-
-            errorMessage.textContent =
-                "Please select two different languages.";
-
+            showError("Please select two different languages.");
             return;
         }
 
+        isTranslating = true;
         translateButton.disabled = true;
         translateButton.textContent = "Translating...";
-
         translationStatus.textContent = "Processing...";
 
         translatedText.textContent = "Please wait...";
-
         translatedText.dataset.translated = "false";
 
         try {
-
             const response = await fetch("/api/translate", {
-
                 method: "POST",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
-
                     text: text,
                     source_language: source,
                     target_language: target
@@ -664,18 +568,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (!response.ok || data.status !== "success") {
-
                 throw new Error(
                     data.error || "Translation failed."
                 );
             }
 
-            translatedText.textContent = data.translated_text;
+            if (!data.translated_text ||
+                typeof data.translated_text !== "string") {
+                throw new Error("The translation service returned no text.");
+            }
 
+            translatedText.textContent = data.translated_text;
             translatedText.dataset.translated = "true";
 
-            translationStatus.textContent =
-                "Translation successful";
+            translationStatus.textContent = "Translation successful";
 
             updateTextDirection();
 
@@ -687,21 +593,18 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
         } catch (error) {
-
-            translatedText.innerHTML =
-                '<span class="placeholder-text">Your translation will appear here...</span>';
+            translatedText.textContent =
+                "Your translation will appear here...";
 
             translatedText.dataset.translated = "false";
 
-            errorMessage.textContent = error.message;
+            showError(error.message || "Unable to translate text.");
 
-            translationStatus.textContent =
-                "Translation failed";
+            translationStatus.textContent = "Translation failed";
 
         } finally {
-
+            isTranslating = false;
             translateButton.disabled = false;
-
             translateButton.innerHTML =
                 '<span>✦</span> Translate now <span class="button-arrow">→</span>';
         }
@@ -712,61 +615,51 @@ document.addEventListener("DOMContentLoaded", () => {
     // =====================================
 
     copyButton.addEventListener("click", () => {
-
         if (translatedText.dataset.translated !== "true") {
-
-            errorMessage.textContent =
-                "There is no translation to copy.";
-
+            showError("There is no translation to copy.");
             return;
         }
 
-        copyText(
-            translatedText.textContent.trim(),
-            copyButton
-        );
+        copyText(translatedText.textContent.trim(), copyButton);
     });
 
     // =====================================
-    // CLEAR ALL HISTORY
+    // SEARCH HISTORY
+    // =====================================
+
+    historySearch.addEventListener("input", renderHistory);
+
+    // =====================================
+    // CLEAR HISTORY
     // =====================================
 
     clearHistoryButton.addEventListener("click", () => {
+        if (currentHistory.length === 0) return;
 
-        if (currentHistory.length === 0) {
-            return;
-        }
-
-        const confirmed = confirm(
-            "Are you sure you want to delete all translation history?"
-        );
-
-        if (!confirmed) {
+        if (!confirm("Are you sure you want to delete all translation history?")) {
             return;
         }
 
         currentHistory = [];
 
-        saveHistory();
-        renderHistory();
-
-        translationStatus.textContent =
-            "History cleared successfully.";
+        if (saveHistory()) {
+            renderHistory();
+            translationStatus.textContent = "History cleared successfully.";
+        }
     });
 
     // =====================================
-    // INITIAL SETUP
+    // INITIALIZATION
     // =====================================
 
     translatedText.dataset.translated = "false";
 
+    updateCharacterCount();
     updateTextDirection();
 
     loadHistory();
     loadSaved();
 
-    console.log(
-        "Lingua Studio JavaScript loaded successfully!"
-    );
+    console.log("Lingua Studio JavaScript loaded successfully.");
 
 });
