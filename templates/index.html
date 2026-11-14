@@ -13,6 +13,37 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+
+    <style>
+        .language-search {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
+            padding: 11px 14px;
+            border: 1px solid #d8d8d8;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #333333;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .language-search:focus {
+            border-color: #b18b52;
+            box-shadow: 0 0 0 3px rgba(177, 139, 82, 0.12);
+        }
+
+        .language-search::placeholder {
+            color: #999999;
+        }
+
+        .language-select select {
+            width: 100%;
+        }
+    </style>
 </head>
 
 <body>
@@ -58,7 +89,6 @@
 
     </aside>
 
-
     <!-- MAIN CONTENT -->
     <main class="main-content">
 
@@ -80,7 +110,6 @@
 
         </header>
 
-
         <!-- HERO -->
         <section class="hero">
 
@@ -94,12 +123,11 @@
             </h1>
 
             <p>
-                Translate your thoughts into any supported language.
+                Translate your thoughts into supported languages.
                 Simple, elegant and effortless.
             </p>
 
         </section>
-
 
         <!-- TRANSLATOR WORKSPACE -->
         <section class="workspace">
@@ -118,42 +146,78 @@
 
             </div>
 
-
             <!-- LANGUAGE CONTROLS -->
             <div class="language-controls">
 
+                <!-- SOURCE LANGUAGE -->
                 <div class="language-select">
+
                     <span class="language-caption">SOURCE LANGUAGE</span>
 
-                    <select id="sourceLanguage">
-                        {% for lang in languages %}
-                        <option value="{{ lang.code }}"{% if lang.code == "en" %} selected{% endif %}>{{ lang.name }}</option>
+                    <input
+                        type="search"
+                        id="sourceLanguageSearch"
+                        class="language-search"
+                        placeholder="Search source language..."
+                        autocomplete="off"
+                        aria-label="Search source languages"
+                    >
+
+                    <select id="sourceLanguage" name="source_language">
+
+                        {% for language in source_languages %}
+                            <option
+                                value="{{ language.code }}"
+                                {% if language.code == "EN" %}selected{% endif %}
+                            >
+                                {{ language.name }}
+                            </option>
                         {% endfor %}
+
                     </select>
+
                 </div>
 
-
+                <!-- SWAP LANGUAGES -->
                 <button
                     type="button"
                     id="swapLanguages"
                     class="swap-button"
-                    aria-label="Swap languages">
+                    aria-label="Swap languages"
+                >
                     ⇄
                 </button>
 
-
+                <!-- TARGET LANGUAGE -->
                 <div class="language-select">
+
                     <span class="language-caption">TARGET LANGUAGE</span>
 
-                    <select id="targetLanguage">
-                        {% for lang in languages %}
-                        <option value="{{ lang.code }}"{% if lang.code == "ur" %} selected{% endif %}>{{ lang.name }}</option>
+                    <input
+                        type="search"
+                        id="targetLanguageSearch"
+                        class="language-search"
+                        placeholder="Search target language..."
+                        autocomplete="off"
+                        aria-label="Search target languages"
+                    >
+
+                    <select id="targetLanguage" name="target_language">
+
+                        {% for language in target_languages %}
+                            <option
+                                value="{{ language.code }}"
+                                {% if language.code == "UR" %}selected{% endif %}
+                            >
+                                {{ language.name }}
+                            </option>
                         {% endfor %}
+
                     </select>
+
                 </div>
 
             </div>
-
 
             <!-- EDITOR PANELS -->
             <div class="editor-grid">
@@ -162,12 +226,14 @@
                 <div class="editor-card input-card">
 
                     <div class="editor-header">
+
                         <div>
                             <span class="editor-number">01</span>
                             <span class="editor-title">Original text</span>
                         </div>
 
                         <span class="editor-tag">INPUT</span>
+
                     </div>
 
                     <textarea
@@ -177,29 +243,33 @@
                     ></textarea>
 
                     <div class="editor-footer">
+
                         <span id="characterCount">0 / 500</span>
 
                         <button
                             type="button"
                             id="clearText"
-                            class="utility-button">
+                            class="utility-button"
+                        >
                             Clear text
                         </button>
+
                     </div>
 
                 </div>
-
 
                 <!-- OUTPUT -->
                 <div class="editor-card output-card">
 
                     <div class="editor-header">
+
                         <div>
                             <span class="editor-number">02</span>
                             <span class="editor-title">Translated result</span>
                         </div>
 
                         <span class="editor-tag gold-tag">OUTPUT</span>
+
                     </div>
 
                     <div
@@ -207,12 +277,15 @@
                         class="translated-text"
                         aria-live="polite"
                     >
+
                         <span class="placeholder-text">
                             Your translation will appear here...
                         </span>
+
                     </div>
 
                     <div class="editor-footer">
+
                         <span id="translationStatus">Waiting for text</span>
 
                         <div class="output-actions">
@@ -220,14 +293,16 @@
                             <button
                                 type="button"
                                 id="saveTranslation"
-                                class="utility-button">
+                                class="utility-button"
+                            >
                                 ☆ Save Favorite
                             </button>
 
                             <button
                                 type="button"
                                 id="copyTranslation"
-                                class="utility-button">
+                                class="utility-button"
+                            >
                                 Copy result
                             </button>
 
@@ -238,7 +313,6 @@
                 </div>
 
             </div>
-
 
             <!-- TRANSLATE ACTION -->
             <div class="action-area">
@@ -260,11 +334,9 @@
 
             </div>
 
-
             <p id="errorMessage" class="error-message" role="alert"></p>
 
         </section>
-
 
         <!-- TRANSLATION HISTORY -->
         <section class="history-section" id="recent">
@@ -280,12 +352,12 @@
                 <button
                     type="button"
                     id="clearHistory"
-                    class="history-clear">
+                    class="history-clear"
+                >
                     Clear history
                 </button>
 
             </div>
-
 
             <div class="history-search">
                 <span>⌕</span>
@@ -296,7 +368,6 @@
                     placeholder="Search previous translations..."
                 >
             </div>
-
 
             <div id="historyList" class="history-list">
 
@@ -309,7 +380,6 @@
             </div>
 
         </section>
-
 
         <!-- SAVED TRANSLATIONS -->
         <section class="saved-section" id="saved">
@@ -326,7 +396,6 @@
 
             </div>
 
-
             <div id="savedList" class="saved-list">
 
                 <div class="saved-empty">
@@ -339,7 +408,6 @@
 
         </section>
 
-
         <!-- BOTTOM INFORMATION -->
         <section class="info-row" id="about">
 
@@ -347,33 +415,30 @@
                 <span class="info-icon">✧</span>
 
                 <div>
-                    <strong>Simple translation</strong>
-                    <small>Easy language conversion</small>
+                    <strong>Accurate translation</strong>
+                    <small>Powered by DeepL API</small>
                 </div>
             </div>
-
 
             <div class="info-item">
                 <span class="info-icon">◎</span>
 
                 <div>
                     <strong>Multiple languages</strong>
-                    <small>30 verified languages</small>
+                    <small>DeepL-supported languages</small>
                 </div>
             </div>
-
 
             <div class="info-item">
                 <span class="info-icon">◇</span>
 
                 <div>
                     <strong>Instant results</strong>
-                    <small>Powered by translation API</small>
+                    <small>Fast translation service</small>
                 </div>
             </div>
 
         </section>
-
 
         <!-- FOOTER -->
         <footer class="footer">
@@ -387,6 +452,88 @@
     </main>
 
 </div>
+
+<!-- LANGUAGE SEARCH FUNCTIONALITY -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function setupLanguageSearch(searchId, selectId) {
+
+        const searchInput = document.getElementById(searchId);
+        const languageSelect = document.getElementById(selectId);
+
+        if (!searchInput || !languageSelect) {
+            return;
+        }
+
+        const originalOptions = Array.from(
+            languageSelect.options
+        ).map(option => ({
+            value: option.value,
+            text: option.textContent.trim()
+        }));
+
+        searchInput.addEventListener("input", function () {
+
+            const query = this.value.trim().toLowerCase();
+
+            const selectedValue = languageSelect.value;
+
+            languageSelect.innerHTML = "";
+
+            const filteredOptions = originalOptions.filter(option => {
+
+                return (
+                    option.text.toLowerCase().includes(query) ||
+                    option.value.toLowerCase().includes(query)
+                );
+
+            });
+
+            filteredOptions.forEach(optionData => {
+
+                const option = document.createElement("option");
+
+                option.value = optionData.value;
+                option.textContent = optionData.text;
+
+                languageSelect.appendChild(option);
+
+            });
+
+            if (
+                filteredOptions.some(option => option.value === selectedValue)
+            ) {
+                languageSelect.value = selectedValue;
+            }
+
+            if (filteredOptions.length === 0) {
+
+                const option = document.createElement("option");
+
+                option.textContent = "No matching language found";
+                option.disabled = true;
+
+                languageSelect.appendChild(option);
+
+            }
+
+        });
+
+    }
+
+    setupLanguageSearch(
+        "sourceLanguageSearch",
+        "sourceLanguage"
+    );
+
+    setupLanguageSearch(
+        "targetLanguageSearch",
+        "targetLanguage"
+    );
+
+});
+</script>
 
 </body>
 </html>

@@ -464,27 +464,104 @@ document.addEventListener("DOMContentLoaded", () => {
     // LANGUAGE SWAP
     // =====================================
 
-    swapButton.addEventListener("click", () => {
-        const previousSource = sourceLanguage.value;
+    
+function findMatchingLanguage(select, languageCode) {
 
-        sourceLanguage.value = targetLanguage.value;
-        targetLanguage.value = previousSource;
+    const options = Array.from(select.options);
 
-        if (translatedText.dataset.translated === "true") {
-            inputText.value = translatedText.textContent.trim();
+    // Exact language code match
+    let match = options.find(
+        option => option.value === languageCode
+    );
 
-            translatedText.textContent =
-                "Your translation will appear here...";
+    if (match) return match.value;
 
-            translatedText.dataset.translated = "false";
-        }
+    // Match regional variants using the base language code
+    const baseCode = languageCode.split("-")[0];
 
-        updateCharacterCount();
-        updateTextDirection();
-        clearError();
+    const matches = options.filter(
+        option => option.value.split("-")[0] === baseCode
+    );
 
-        translationStatus.textContent = "Languages swapped";
-    });
+    if (matches.length === 0) return null;
+
+    // Prefer American English when available
+    if (baseCode === "EN") {
+        const americanEnglish = matches.find(
+            option => option.value === "EN-US"
+        );
+
+        if (americanEnglish) return americanEnglish.value;
+    }
+
+    return matches[0].value;
+}
+
+
+swapButton.addEventListener("click", () => {
+
+    const previousSource = sourceLanguage.value;
+    const previousTarget = targetLanguage.value;
+
+    // Clear both language searches and restore full lists
+    const sourceSearch = document.getElementById(
+        "sourceLanguageSearch"
+    );
+
+    const targetSearch = document.getElementById(
+        "targetLanguageSearch"
+    );
+
+    if (sourceSearch) {
+        sourceSearch.value = "";
+        sourceSearch.dispatchEvent(new Event("input"));
+    }
+
+    if (targetSearch) {
+        targetSearch.value = "";
+        targetSearch.dispatchEvent(new Event("input"));
+    }
+
+    // Find equivalent codes in opposite dropdowns
+    const newSource = findMatchingLanguage(
+        sourceLanguage,
+        previousTarget
+    );
+
+    const newTarget = findMatchingLanguage(
+        targetLanguage,
+        previousSource
+    );
+
+    if (!newSource || !newTarget) {
+        showError(
+            "These languages cannot be swapped. Please select another language pair."
+        );
+        return;
+    }
+
+    // Update dropdowns
+    sourceLanguage.value = newSource;
+    targetLanguage.value = newTarget;
+
+    // Move translated text back into the input
+    if (translatedText.dataset.translated === "true") {
+
+        inputText.value = translatedText.textContent.trim();
+
+        translatedText.innerHTML =
+            '<span class="placeholder-text">Your translation will appear here...</span>';
+
+        translatedText.dataset.translated = "false";
+    }
+
+    updateCharacterCount();
+    updateTextDirection();
+    clearError();
+
+    translationStatus.textContent = "Languages swapped";
+});
+
 
     // =====================================
     // CLEAR INPUT
